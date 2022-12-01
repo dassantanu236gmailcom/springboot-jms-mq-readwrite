@@ -1,0 +1,21 @@
+version: "3"
+services:
+  mqsvr:
+    image: "ibmmq"
+    ports:
+      - "1414:1414"
+      - "9443:9443"
+    environment:
+    - LICENSE=accept
+    - MQ_QMGR_NAME=QM1
+    - MQ_APP_PASSWORD=passw0rd
+
+  jms:
+    image: "jmsmq:latest"
+    depends_on:
+      - mqsvr
+    network_mode: "host"
+    volumes:
+    - jmsapp:/appl/springjms/log
+volumes:
+  jmsapp:

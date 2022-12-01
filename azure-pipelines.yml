@@ -1,0 +1,67 @@
+trigger:
+- none
+
+resources:
+- repo: self
+
+variables:
+  tag: '$(Build.BuildId)'
+
+stages:
+- stage: Build
+  displayName: Build a java based image
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: Maven@3
+      displayName: Build a jar
+      inputs:
+        mavenPomFile: 'pom.xml'
+        mavenOptions: '-Xmx3072m'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.11'
+        jdkArchitectureOption: 'x64'
+        publishJUnitResults: false
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        goals: 'package'
+      
+    - task: CopyFiles@2
+      displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
+      inputs:
+        SourceFolder: '$(system.defaultworkingdirectory)'
+        Contents: '**/*.jar'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+    
+    - task: Docker@2
+      displayName: Build an image
+      inputs:
+        command: build
+        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
+        containerRegistry: ''
+        repository: 'myrepository'
+        tags: |
+          $(tag)
+    - task: Bash@3
+      displayName: Save Docker Image
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker save myrepository:$(tag) -o $(Pipeline.Workspace)/jms_mq.tar
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/jms_mq.tar'
+        artifact: 'jms_mq'
+        publishLocation: 'pipeline'
+- stage: Push
+  displayName: Push DevOps base image
+  jobs:
+  - job: Push
+    steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        artifactName: 'jms_mq'
+        targetPath: '$(Pipeline.Workspace)'
