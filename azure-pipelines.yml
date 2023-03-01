@@ -1,6 +1,8 @@
 trigger:
 - none
 
+pool: Default
+
 resources:
 - repo: self
 
@@ -13,16 +15,18 @@ stages:
   jobs:
   - job: Build
     displayName: Build
-    pool:
-      vmImage: ubuntu-latest
+    #pool:
+    #vmImage: ubuntu-latest
     steps:
     - task: Maven@3
       displayName: Build a jar
       inputs:
         mavenPomFile: 'pom.xml'
         mavenOptions: '-Xmx3072m'
-        javaHomeOption: 'JDKVersion'
-        jdkVersionOption: '1.11'
+        #javaHomeOption: 'JDKVersion'
+        javaHomeOption: 'path'
+        jdkDirectory: '/usr/lib/jvm/java-11-openjdk-amd64'
+        #jdkVersionOption: '1.10'
         jdkArchitectureOption: 'x64'
         publishJUnitResults: false
         testResultsFiles: '**/surefire-reports/TEST-*.xml'
